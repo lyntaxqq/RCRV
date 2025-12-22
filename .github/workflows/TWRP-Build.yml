@@ -1,0 +1,147 @@
+name: TWRP - Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      MANIFEST_BRANCH:
+        description: 'TWRP Manifest Branch'
+        required: true
+        default: 'twrp-12.1'
+        type: choice
+        options:
+        - twrp-12.1
+        - twrp-11
+      DEVICE_TREE:
+        description: 'TWRP Device Tree'
+        required: true
+        default: 'https://github.com/galaxy-a16/android_device_samsung_a16'
+      DEVICE_TREE_BRANCH:
+        description: 'TWRP Device Tree Branch'
+        required: true
+        default: 'android-12.1'
+      DEVICE_PATH:
+        description: 'Specify your Device Path'
+        required: true
+        default: 'device/samsung/a16'
+      DEVICE_NAME:
+        description: 'Specify your Device Codename'
+        required: true
+        default: 'a16'
+      BUILD_TARGET:
+        description: 'Specify your Build Target'
+        required: true
+        default: 'recovery'
+        type: choice
+        options:
+        - boot
+        - recovery
+
+jobs:
+  build:
+    name: Build TWRP by ${{ github.actor }}
+    runs-on: ubuntu-22.04
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout the repository
+      uses: actions/checkout@v4
+              
+    - name: Free disk space (1/3)
+      run: |
+       sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+       sudo docker image prune --all --force
+       sudo docker builder prune -a
+
+    - name: Free disk space (2/3)
+      uses: jlumbroso/free-disk-space@main
+      with:
+          tool-cache: true
+
+    - name: Free disk space (3/3)
+      uses: rokibhasansagar/slimhub_actions@main
+      with:
+          retain: 'compiler_cmake'
+
+    - name: Swap Space
+      uses: pierotofy/set-swap-space@master
+      with:
+        swap-size-gb: 24
+      
+    - name: Set-up Build Environment
+      run: |
+        mkdir tmp
+        cd tmp
+        git clone https://github.com/akhilnarang/scripts
+        cd scripts
+        ./setup/android*.sh
+        cd ../..
+        rm -rf tmp
+      
+    - name: Setup Manifest and Sync TWRP
+      if: inputs.MANIFEST_BRANCH == 'twrp-11' || inputs.MANIFEST_BRANCH == 'twrp-12.1'
+      run: |
+        mkdir -p ${GITHUB_WORKSPACE}/TWRP
+        cd ${GITHUB_WORKSPACE}/TWRP
+        git config --global user.name "${{ github.actor }}"
+        git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+        repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b ${{ inputs.MANIFEST_BRANCH }}
+        repo sync -j32
+        
+    - name: Clone Device Tree
+      run: |
+        cd ${GITHUB_WORKSPACE}/TWRP
+        git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
+        cd ${{ inputs.DEVICE_PATH }}
+        echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+    - name: Building TWRP
+      run: |
+        cd ${GITHUB_WORKSPACE}/TWRP
+        set +e
+        source build/envsetup.sh
+        export ALLOW_MISSING_DEPENDENCIES=true
+        set -e
+        lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make clean && mka adbd ${{ inputs.BUILD_TARGET }}image
+        
+    - name: Set Release Properties
+      run: |
+        # Set Build Date (fixed)
+        echo "BUILD_DATE=$(TZ=Asia/Manila date +'%d %B %Y %H:%M')" >> $GITHUB_ENV
+        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+        DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
+        if [[ "${DEVICE_TREE_URL}" == *.git ]]; then
+          DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
+        fi
+        echo "DEVICE_TREE_URL=${DEVICE_TREE_URL}" >> $GITHUB_ENV
+
+    - name: Upload to Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          ${GITHUB_WORKSPACE}/TWRP/${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/*.img
+        name: TWRP Recovery for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
+        tag_name: ${{ github.run_id }}
+        body: |
+          ## TWRP Recovery Build - Unofficial
+          Build: twrp_${{ inputs.MANIFEST_BRANCH }}
+          Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
+          Commit: Most recent [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }}) during building.
+
+    - name: Send Telegram Message
+      run: |
+        curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_API_TOKEN }}/sendMessage \
+        -d chat_id=-1003316946102 \
+        -d parse_mode=MarkdownV2 \
+        -d text="🎉 Recovery Build Completed! 🚀
+        -----------------------------------
+        📦 File Name: TWRP-${{ github.run_id }}-Unofficial-${{ inputs.DEVICE_NAME }}.zip
+        📤 Device: ${{ inputs.DEVICE_NAME }}
+        📏 OrangeFox Manifest: fox_${{ inputs.MANIFEST_BRANCH }}
+        💾 IMG File Size: $(du -sh ${GITHUB_WORKSPACE}/TWRP/out/target/product/${{ inputs.DEVICE_NAME }}/*.img | cut -f1)
+        🗓 Build Date: ${{ env.BUILD_DATE }}
+        🔑 Commit: Most recent [commit](https://github.com/${{ inputs.DEVICE_TREE }}/commit/${{ env.COMMIT_ID }}) during building.
+        🔗 Download Link: [Click Here](https://github.com/${{ github.repository }}/releases/download/${{ github.run_id }}/OrangeFox-${{ github.run_id }}-Unofficial-${{ inputs.DEVICE_NAME }}.zip)
+        -----------------------------------
+        ✅ Uploaded via github-actions"
