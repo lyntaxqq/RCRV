@@ -1,11 +1,5 @@
 name: OrangeFox - Build
 
-# Credits to:
-# https://github.com/TeamWin
-# https://gitlab.com/OrangeFox
-# https://github.com/azwhikaru for Recovery Builder Template
-# And all Contributors in every repositories I used
-
 on:
   workflow_dispatch:
     inputs:
@@ -80,7 +74,7 @@ jobs:
         git clone https://gitlab.com/OrangeFox/sync.git -b master
         cd sync
         ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
-
+        
     - name: Clone Device Tree
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
@@ -96,12 +90,12 @@ jobs:
         export ALLOW_MISSING_DEPENDENCIES=true
         set -e
         lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make clean && mka adbd ${{ inputs.BUILD_TARGET }}image
-
+        
     - name: Set Release Properties
       run: |
-        echo "BUILD_DATE=$(TZ=Asia/Manila date +%Y%m%d)" >> $GITHUB_ENV
+        # Set Build Date (fixed)
+        echo "BUILD_DATE=$(TZ=Asia/Manila date +'%d %B %Y %H:%M')" >> $GITHUB_ENV
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
-
         DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
         if [[ "${DEVICE_TREE_URL}" == *.git ]]; then
           DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
@@ -132,9 +126,8 @@ jobs:
         📤 Device: ${{ inputs.DEVICE_NAME }}
         📏 OrangeFox Manifest: fox_${{ inputs.MANIFEST_BRANCH }}
         💾 ZIP File Size: $(du -sh ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip | cut -f1)
-        🗓 Build Date: $(TZ=Asia/Manila date +%d %B %Y %H:%M)
-        🔑 Commit: Most recent [commit](https://github.com/${{ inputs.DEVICE_TREE }}/commit/${{ env.COMMIT_ID }}) during building.
+        🗓 Build Date: ${{ env.BUILD_DATE }}
+        🔑 Commit: Most recent [commit](${{ env.COMMIT_URL }}) during building.
         🔗 Download Link: [Click Here](https://github.com/${{ github.repository }}/releases/download/${{ github.run_id }}/OrangeFox-${{ github.run_id }}-Unofficial-${{ inputs.DEVICE_NAME }}.zip)
         -----------------------------------
         ✅ Uploaded via github-actions"
-
