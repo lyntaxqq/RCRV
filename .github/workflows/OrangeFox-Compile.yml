@@ -15,6 +15,14 @@ on:
         description: 'OrangeFox Device Tree'
         required: true
         default: 'https://github.com/cd-Crypton/custom_recovery_tree_realme_nashc'
+      COMMON_TREE:
+        description: 'Device Common Tree'
+        required: false
+        default: 'https://github.com/galaxy-a16/android_device_samsung_mt6835-common'
+      COMMON_PATH:
+        description: 'Device Common Tree Path'
+        required: false
+        default: 'device/samsung/mt6835-common'
       DEVICE_TREE_BRANCH:
         description: 'OrangeFox Device Tree Branch'
         required: true
@@ -80,6 +88,13 @@ jobs:
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
         cd ${{ inputs.DEVICE_PATH }}
+        echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+    - name: Clone Common Tree
+      run: |
+        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+        git clone ${{ inputs.COMMON_TREE }} ./${{ inputs.COMMON_PATH }}
+        cd ${{ inputs.COMMON_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
     - name: Building OrangeFox
