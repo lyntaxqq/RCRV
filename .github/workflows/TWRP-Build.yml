@@ -76,11 +76,8 @@ jobs:
         git config --global user.name "${{ github.actor }}"
         git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
         repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b ${{ inputs.MANIFEST_BRANCH }}
-
-    - name: Repo Sync
-      run: |
         repo sync -j$(nproc --all) --force-sync
-        
+
     - name: Clone Device Tree
       run: |
         cd ${GITHUB_WORKSPACE}/TWRP
