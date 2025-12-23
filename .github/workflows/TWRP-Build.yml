@@ -97,7 +97,7 @@ jobs:
     - name: Set Release Properties
       run: |
         echo "BUILD_DATE=$(TZ=Asia/Manila date +'%d %B %Y %H:%M')" >> $GITHUB_ENV
-        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+        cd ${GITHUB_WORKSPACE}/TWRP
         DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
         if [[ "${DEVICE_TREE_URL}" == *.git ]]; then
           DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
