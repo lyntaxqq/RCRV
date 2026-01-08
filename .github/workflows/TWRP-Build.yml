@@ -124,7 +124,7 @@ jobs:
     - name: Apply kernel header patches if building on Mi439
       if: ${{ inputs.KERNEL_TREE != '' }}
       run: |
-        git apply fix-generated-kernel-headers.patch
+        sed -i 's/name: "generated_kernel_headers"/name: "generated_kernel_headers_twrp"/' vendor/twrp/build/soong/Android.bp
 
     - name: Building TWRP
       run: |
