@@ -1,4 +1,4 @@
-# The TWRP & OFOX maintainer patch.
+# The TWRP maintainer patch.
 #!/usr/bin/env bash
 set -e
 
@@ -8,7 +8,7 @@ if [ -z "$DEVICE_PATH" ]; then
   exit 1
 fi
 
-DEVICE_DIR="${GITHUB_WORKSPACE}/OrangeFox/fox_${MANIFEST_BRANCH}/${DEVICE_PATH}"
+DEVICE_DIR="${GITHUB_WORKSPACE}/TWRP/${DEVICE_PATH}"
 BOARDCONFIG="${DEVICE_DIR}/BoardConfig.mk"
 
 echo ">>> Device path: $DEVICE_DIR"
