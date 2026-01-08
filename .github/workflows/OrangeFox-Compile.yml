@@ -96,13 +96,7 @@ jobs:
         git clone ${{ inputs.COMMON_TREE }} ./${{ inputs.COMMON_PATH }}
         cd ${{ inputs.COMMON_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
-
-    - name: Apply patches
-      run: |
-        export MANIFEST_BRANCH=${{ inputs.MANIFEST_BRANCH }}
-        export DEVICE_PATH=${{ inputs.DEVICE_PATH }}
-        bash patch-maintainer.sh
-
+        
     - name: Building OrangeFox
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
