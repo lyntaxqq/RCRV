@@ -57,7 +57,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
               
-    - name: Clean-up
+    - name: Free disk space (1/1)
       uses: rokibhasansagar/slimhub_actions@main
 
     - name: Swap Space
@@ -97,6 +97,12 @@ jobs:
         cd ${{ inputs.COMMON_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
+    - name: Apply patches
+      run: |
+        export MANIFEST_BRANCH=${{ inputs.MANIFEST_BRANCH }}
+        export DEVICE_PATH=${{ inputs.DEVICE_PATH }}
+        bash patch-maintainer.sh
+
     - name: Building OrangeFox
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
@@ -108,7 +114,6 @@ jobs:
         
     - name: Set Release Properties
       run: |
-        # Set Build Date (fixed)
         echo "BUILD_DATE=$(TZ=Asia/Manila date +'%d %B %Y %H:%M')" >> $GITHUB_ENV
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
