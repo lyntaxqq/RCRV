@@ -1,0 +1,11 @@
+diff --git a/vendor/twrp/build/soong/Android.bp b/vendor/twrp/build/soong/Android.bp
+index 1111111..2222222 100644
+--- a/vendor/twrp/build/soong/Android.bp
++++ b/vendor/twrp/build/soong/Android.bp
+@@ -40,7 +40,7 @@
+
+ generated_kernel_headers {
+-    name: "generated_kernel_headers",
++    name: "generated_kernel_headers_twrp",
+     export_include_dirs: ["include"],
+ }
